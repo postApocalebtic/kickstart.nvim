@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -102,7 +102,7 @@ vim.g.have_nerd_font = false
 vim.opt.number = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.opt.relativenumber = true
+vim.opt.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.opt.mouse = 'a'
@@ -275,7 +275,62 @@ require('lazy').setup({
       },
     },
   },
-
+  {
+    'yetone/avante.nvim',
+    event = 'VeryLazy',
+    version = false, -- Never set this value to "*"! Never!
+    opts = {
+      provider = 'claude',
+      claude = {
+        model = 'claude-3-5-sonnet-20240620', -- Using Claude 3.5 Sonnet model
+        api_key = os.getenv 'ANTHROPIC_API_KEY', -- Set your API key in environment variables
+        temperature = 0.7,
+        max_tokens = 4096,
+        timeout = 60000, -- Increased timeout for longer responses
+      },
+    },
+    -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
+    build = 'make',
+    -- build = "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false" -- for windows
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter',
+      'stevearc/dressing.nvim',
+      'nvim-lua/plenary.nvim',
+      'MunifTanjim/nui.nvim',
+      --- The below dependencies are optional,
+      'echasnovski/mini.pick', -- for file_selector provider mini.pick
+      'nvim-telescope/telescope.nvim', -- for file_selector provider telescope
+      'hrsh7th/nvim-cmp', -- autocompletion for avante commands and mentions
+      'ibhagwan/fzf-lua', -- for file_selector provider fzf
+      'nvim-tree/nvim-web-devicons', -- or echasnovski/mini.icons
+      'zbirenbaum/copilot.lua', -- for providers='copilot'
+      {
+        -- support for image pasting
+        'HakonHarnes/img-clip.nvim',
+        event = 'VeryLazy',
+        opts = {
+          -- recommended settings
+          default = {
+            embed_image_as_base64 = false,
+            prompt_for_file_name = false,
+            drag_and_drop = {
+              insert_mode = true,
+            },
+            -- required for Windows users
+            use_absolute_path = true,
+          },
+        },
+      },
+      {
+        -- Make sure to set this up properly if you have lazy=true
+        'MeanderingProgrammer/render-markdown.nvim',
+        opts = {
+          file_types = { 'markdown', 'Avante' },
+        },
+        ft = { 'markdown', 'Avante' },
+      },
+    },
+  },
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
   -- This is often very useful to both group configuration, as well as handle
@@ -768,7 +823,28 @@ require('lazy').setup({
       },
     },
   },
-
+  {
+    'saghen/blink.cmp',
+    dependencies = {
+      'Kaiser-Yang/blink-cmp-avante',
+      -- ... Other dependencies
+    },
+    opts = {
+      sources = {
+        -- Add 'avante' to the list
+        default = { 'avante', 'lsp', 'path', 'luasnip', 'buffer' },
+        providers = {
+          avante = {
+            module = 'blink-cmp-avante',
+            name = 'Avante',
+            opts = {
+              -- options for blink-cmp-avante
+            },
+          },
+        },
+      },
+    },
+  },
   { -- Autocompletion
     'saghen/blink.cmp',
     event = 'VimEnter',
