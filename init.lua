@@ -276,6 +276,70 @@ require('lazy').setup({
     },
   },
   {
+    'navarasu/onedark.nvim',
+    priority = 1000, -- Load this before other plugins
+    config = function()
+      require('onedark').setup {
+        style = 'darker', -- Choose your preferred style
+      }
+      require('onedark').load()
+    end,
+  },
+  {
+    'nvim-tree/nvim-tree.lua',
+    version = '*',
+    lazy = false,
+    dependencies = {
+      'nvim-tree/nvim-web-devicons',
+    },
+    config = function()
+      local function nvim_tree_on_attach(bufnr)
+        local api = require "nvim-tree.api"
+    
+        local function opts(desc)
+          return { desc = 'nvim-tree: ' .. desc, buffer = bufnr, noremap = true, silent = true, nowait = true }
+        end
+    
+        -- default mappings
+        api.config.mappings.default_on_attach(bufnr)
+    
+        -- custom mappings
+        local function change_root_to_node(node)
+          if node == nil then
+            node = api.tree.get_node_under_cursor()
+          end
+    
+          if node ~= nil and node.type == "directory" then
+            vim.api.nvim_set_current_dir(node.absolute_path)
+          end
+          api.tree.change_root_to_node(node)
+        end
+    
+        local function change_root_to_parent(node)
+          local abs_path
+          if node == nil then
+            abs_path = api.tree.get_nodes().absolute_path
+          else
+            abs_path = node.absolute_path
+          end
+    
+          local parent_path = vim.fs.dirname(abs_path)
+          vim.api.nvim_set_current_dir(parent_path)
+          api.tree.change_root(parent_path)
+        end
+    
+        vim.keymap.set('n', '<C-]>',          change_root_to_node,   opts('CD'))
+        vim.keymap.set('n', '<2-RightMouse>', change_root_to_node,   opts('CD'))
+        vim.keymap.set('n', '-',              change_root_to_parent, opts('Up'))
+      end
+
+      require('nvim-tree').setup {
+        on_attach = nvim_tree_on_attach,
+      }
+      vim.keymap.set('n', '<leader>e', ':NvimTreeFindFileToggle<cr>')
+    end,
+  },
+  {
     'yetone/avante.nvim',
     event = 'VeryLazy',
     version = false, -- Never set this value to "*"! Never!
@@ -283,7 +347,7 @@ require('lazy').setup({
       provider = 'claude',
       claude = {
         model = 'claude-3-5-sonnet-20240620', -- Using Claude 3.5 Sonnet model
-        api_key = os.getenv 'ANTHROPIC_API_KEY', -- Set your API key in environment variables
+        api_key_name = 'cmd:lpass show --notes anthropic-api-key',
         temperature = 0.7,
         max_tokens = 4096,
         timeout = 60000, -- Increased timeout for longer responses
@@ -397,6 +461,14 @@ require('lazy').setup({
       },
     },
   },
+  {
+    'ibhagwan/fzf-lua',
+    -- optional for icon support
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    -- or if using mini.icons/mini.nvim
+    -- dependencies = { "echasnovski/mini.icons" },
+    opts = {},
+  },
 
   -- NOTE: Plugins can specify dependencies.
   --
@@ -508,7 +580,6 @@ require('lazy').setup({
       end, { desc = '[S]earch [N]eovim files' })
     end,
   },
-
   -- LSP Plugins
   {
     -- `lazydev` configures Lua LSP for your Neovim config, runtime and plugins
@@ -730,6 +801,58 @@ require('lazy').setup({
         -- But for many setups, the LSP (`ts_ls`) will work just fine
         -- ts_ls = {},
         --
+        -- TypeScript/JavaScript (for React and Next.js)
+        ts_ls = {
+          filetypes = { 'typescript', 'javascript', 'javascriptreact', 'typescriptreact', 'javascript.jsx', 'typescript.tsx' },
+        },
+
+        -- Vue
+        volar = {
+          -- Volar handles Vue files
+          filetypes = { 'vue' },
+        },
+
+        -- Tailwind CSS
+        tailwindcss = {
+          filetypes = {
+            'html',
+            'css',
+            'scss',
+            'javascript',
+            'javascriptreact',
+            'typescript',
+            'typescriptreact',
+            'vue',
+            'svelte',
+          },
+          root_dir = function(fname)
+            return require('lspconfig.util').root_pattern('tailwind.config.js', 'tailwind.config.ts', 'postcss.config.js', 'postcss.config.mjs')(fname)
+              or vim.fs.dirname(vim.fs.find('.git', { path = fname, upward = true })[1])
+          end,
+        },
+        -- Add CSS support
+        cssls = {},
+
+        -- HTML support
+        html = {},
+
+        -- Emmet support (useful for all frameworks)
+        emmet_ls = {
+          filetypes = {
+            'html',
+            'css',
+            'scss',
+            'javascript',
+            'javascriptreact',
+            'typescript',
+            'typescriptreact',
+            'vue',
+            'svelte',
+          },
+        },
+
+        -- ESLint
+        eslint = {},
 
         lua_ls = {
           -- cmd = { ... },
@@ -746,7 +869,6 @@ require('lazy').setup({
           },
         },
       }
-
       -- Ensure the servers and tools above are installed
       --
       -- To check the current status of installed tools and/or manually install
@@ -819,7 +941,8 @@ require('lazy').setup({
         -- python = { "isort", "black" },
         --
         -- You can use 'stop_after_first' to run the first available formatter from the list
-        -- javascript = { "prettierd", "prettier", stop_after_first = true },
+        javascript = { 'prettierd', 'prettier', stop_after_first = true },
+        vue = { 'prettierd', 'prettier', stop_after_first = true },
       },
     },
   },
@@ -976,7 +1099,7 @@ require('lazy').setup({
       --
       -- Examples:
       --  - va)  - [V]isually select [A]round [)]paren
-      --  - yinq - [Y]ank [I]nside [N]ext [Q]uote
+      --  - yinq - [Y]ank [I]nner [N]ext [Q]uote
       --  - ci'  - [C]hange [I]nside [']quote
       require('mini.ai').setup { n_lines = 500 }
 
@@ -1012,7 +1135,23 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'vim',
+        'vimdoc',
+        'vue',
+        'typescript',
+        'tsx',
+        'javascript',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
